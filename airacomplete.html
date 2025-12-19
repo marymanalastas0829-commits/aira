@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRA - AI Research Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #0a0a0b 0%, #18181b 50%, #0f0f10 100%); min-height: 100vh; }
+        
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(63, 63, 70, 0.5); }
+        .card { background: #18181b; border: 1px solid #27272a; }
+        .sidebar { background: linear-gradient(180deg, #18181b 0%, #0f0f10 100%); border-right: 1px solid #27272a; }
+        
+        .input-field { 
+            background: rgba(39, 39, 42, 0.8); 
+            border: 1px solid #3f3f46; 
+            transition: all 0.3s ease;
+        }
+        .input-field:focus { 
+            border-color: #dc2626; 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15), 0 0 20px rgba(220, 38, 38, 0.1); 
+        }
+        
+        .btn-primary { 
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 25px rgba(220, 38, 38, 0.4); 
+        }
+        
+        .btn-secondary {
+            background: rgba(39, 39, 42, 0.8);
+            border: 1px solid #3f3f46;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+            background: rgba(63, 63, 70, 0.8);
+            border-color: #52525b;
+        }
+        
+        .nav-item { transition: all 0.2s ease; border-left: 3px solid transparent; }
+        .nav-item:hover { background: rgba(39, 39, 42, 0.5); }
+        .nav-item.active { background: rgba(220, 38, 38, 0.15); border-left-color: #dc2626; }
+        
+        .glow-red { box-shadow: 0 0 60px rgba(220, 38, 38, 0.4), 0 0 100px rgba(220, 38, 38, 0.2); }
+        .glow-subtle { box-shadow: 0 0 40px rgba(220, 38, 38, 0.15); }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .float { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .typing span { animation: blink 1.4s infinite; opacity: 0.2; }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+        
+        .otp-input { width: 52px; height: 60px; text-align: center; font-size: 24px; font-weight: 700; }
+        
+        .divider { display: flex; align-items: center; gap: 16px; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #3f3f46, transparent); }
+        
+        .tab-btn { transition: all 0.2s; }
+        .tab-btn.active { background: #dc2626; color: white; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        
+        .view { display: none; }
+        .view.active { display: flex; }
+        
+        .stat-card { 
+            background: linear-gradient(135deg, rgba(24, 24, 27, 0.9) 0%, rgba(15, 15, 16, 0.9) 100%);
+            border: 1px solid #27272a;
+        }
+        .stat-card:hover { border-color: #3f3f46; }
+        
+        .knowledge-card { 
+            background: rgba(39, 39, 42, 0.5); 
+            border: 1px solid #3f3f46; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        }
+        .knowledge-card:hover { 
+            border-color: #dc2626; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.15);
+        }
+        
+        table { border-collapse: collapse; width: 100%; }
+        th { background: rgba(24, 24, 27, 0.8); font-weight: 500; color: #a1a1aa; padding: 14px 16px; text-align: left; }
+        td { padding: 14px 16px; border-bottom: 1px solid #27272a; }
+        
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        
+        .toast { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="text-zinc-100">
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<!-- ==================== LOGIN VIEW ==================== -->
+<div id="loginView" class="view active min-h-screen">
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-20 w-96 h-96 bg-red-600/5 rounded-full blur-3xl float"></div>
+        <div class="absolute bottom-20 right-20 w-80 h-80 bg-red-600/5 rounded-full blur-3xl float" style="animation-delay: -3s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/3 rounded-full blur-3xl"></div>
+    </div>
+    
+    <!-- Left Branding Panel -->
+    <div class="hidden lg:flex lg:w-1/2 relative">
+        <div class="relative z-10 flex flex-col justify-center px-16 xl:px-24">
+            <!-- Logo -->
+            <div class="flex items-center gap-4 mb-12">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center glow-red">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white">AIRA</h1>
+                    <p class="text-red-400 font-medium">AI Research Agent</p>
+                </div>
+            </div>
+            
+            <!-- Headline -->
+            <h2 class="text-5xl font-bold text-white mb-6 leading-tight">
+                Intelligence at<br>Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Fingertips</span>
+            </h2>
+            <p class="text-xl text-zinc-400 mb-12 max-w-md">Deep research, data analysis, and intelligent insights powered by your industry knowledge base.</p>
+            
+            <!-- Features -->
+            <div class="space-y-5">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                        <span class="text-xl">🔬</span>
+                    </div>
+                    <div>
+                        <p class="text-white font-semibold">Deep Research</p>
+                        <p class="text-zinc-500 text-sm">Multi-source analysis with citations</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                        <span class="text-xl">📊</span>
+                    </div>
+                    <div>
+                        <p class="text-white font-semibold">Data Visualization</p>
+                        <p class="text-zinc-500 text-sm">Interactive charts & maps</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                        <span class="text-xl">🏢</span>
+                    </div>
+                    <div>
+                        <p class="text-white font-semibold">Enterprise Ready</p>
+                        <p class="text-zinc-500 text-sm">Team collaboration & security</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Auth Panel -->
+    <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div class="w-full max-w-md">
+            <!-- Mobile Logo -->
+            <div class="lg:hidden flex items-center justify-center gap-3 mb-10">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center glow-subtle">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+                <span class="text-2xl font-bold text-white">AIRA</span>
+            </div>
+            
+            <!-- ===== LOGIN FORM ===== -->
+            <div id="loginForm" class="glass-card rounded-2xl p-8 fade-in">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-white">Welcome back</h2>
+                    <p class="text-zinc-500 mt-2">Sign in to your account</p>
+                </div>
+                
+                <!-- Login Type Tabs -->
+                <div class="flex gap-2 p-1 bg-zinc-900/50 rounded-xl mb-6">
+                    <button onclick="setLoginType('enterprise')" id="tabEnterprise" class="tab-btn active flex-1 py-2.5 rounded-lg text-sm font-medium transition">
+                        🏢 Enterprise
+                    </button>
+                    <button onclick="setLoginType('public')" id="tabPublic" class="tab-btn flex-1 py-2.5 rounded-lg text-sm font-medium text-zinc-400 transition">
+                        👤 Public
+                    </button>
+                </div>
+                
+                <!-- Enterprise Login (Email + Password) -->
+                <div id="enterpriseLogin" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-2 font-medium">Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="you@company.com" 
+                            class="input-field w-full px-4 py-3.5 rounded-xl text-white placeholder-zinc-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-2 font-medium">Password</label>
+                        <div class="relative">
+                            <input type="password" id="loginPassword" placeholder="••••••••" 
+                                class="input-field w-full px-4 py-3.5 rounded-xl text-white placeholder-zinc-500 pr-12">
+                            <button type="button" onclick="togglePassword('loginPassword')" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 rounded bg-zinc-800 border-zinc-600 text-red-600">
+                            <span class="text-zinc-400">Remember me</span>
+                        </label>
+                        <button class="text-red-500 hover:text-red-400">Forgot password?</button>
+                    </div>
+                    
+                    <button onclick="loginEnterprise()" class="btn-primary w-full py-3.5 rounded-xl text-white font-semibold mt-2">
+                        Sign In
+                    </button>
+                    
+                    <div class="p-4 bg-zinc-900/50 rounded-xl mt-4">
+                        <p class="text-xs text-zinc-500 mb-2">Test Credentials:</p>
+                        <p class="text-xs text-zinc-400">Admin: <span class="text-white">admin@aira.com</span> / <span class="text-white">admin123</span></p>
+                        <p class="text-xs text-zinc-400">Company: <span class="text-white">mhey@lantau.com</span> / <span class="text-white">company123</span></p>
+                    </div>
+                </div>
+                
+                <!-- Public Login (Magic Link) -->
+                <div id="publicLogin" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-2 font-medium">Gmail Address</label>
+                        <input type="email" id="publicEmail" placeholder="you@gmail.com" 
+                            class="input-field w-full px-4 py-3.5 rounded-xl text-white placeholder-zinc-500">
+                        <p class="text-xs text-zinc-600 mt-2">We'll send you a secure login link</p>
+                    </div>
+                    
+                    <button onclick="sendMagicLink()" class="btn-primary w-full py-3.5 rounded-xl text-white font-semibold">
+                        Send Magic Link
+                    </button>
+                    
+                    <div class="divider text-zinc-600 text-sm my-6">or</div>
+                    
+                    <button onclick="googleSignIn()" class="btn-secondary w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-3">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Continue with Google
+                    </button>
+                </div>
+                
+                <div id="loginError" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"></div>
+                
+                <p class="text-center text-zinc-500 text-sm mt-6">
+                    Don't have an account? <button onclick="showAuthView('register')" class="text-red-500 hover:text-red-400 font-medium">Sign up</button>
+                </p>
+            </div>
+            
+            <!-- ===== MAGIC LINK SENT ===== -->
+            <div id="magicLinkSent" class="hidden glass-card rounded-2xl p-8 fade-in">
+                <div class="text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Check your email</h2>
+                    <p class="text-zinc-500">Magic link sent to</p>
+                    <p id="magicEmail" class="text-white font-medium mt-1"></p>
+                </div>
+                
+                <div class="mt-8 p-4 bg-zinc-900/50 rounded-xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm text-zinc-400">Link expires in:</span>
+                        <span id="magicTimer" class="text-red-400 font-mono font-bold text-lg">05:00</span>
+                    </div>
+                    <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div id="magicProgress" class="h-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-1000" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-4 border border-dashed border-zinc-700 rounded-xl">
+                    <p class="text-xs text-zinc-500 mb-3 text-center">📧 Check your email for the magic link</p>
+                    <button onclick="openMagicLink()" class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-sm font-medium transition">
+                        🔗 Open Magic Link
+                    </button>
+                </div>
+                
+                <button onclick="showAuthView('login')" class="w-full mt-6 py-2 text-zinc-400 hover:text-white text-sm transition">
+                    ← Back to login
+                </button>
+            </div>
+            
+            <!-- ===== REGISTER FORM ===== -->
+            <div id="registerForm" class="hidden glass-card rounded-2xl p-8 fade-in">
+                <!-- Step Indicators -->
+                <div class="flex gap-2 justify-center mb-8">
+                    <div id="step1Dot" class="w-8 h-2 rounded-full bg-red-500 transition-all"></div>
+                    <div id="step2Dot" class="w-2 h-2 rounded-full bg-zinc-700 transition-all"></div>
+                    <div id="step3Dot" class="w-2 h-2 rounded-full bg-zinc-700 transition-all"></div>
+                </div>
+                
+                <!-- Step 1: Details -->
+                <div id="regStep1" class="space-y-5">
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">Create account</h2>
+                        <p class="text-zinc-500 mt-2">Join AIRA for free (Public Access)</p>
+                    </div>
+                    
+                    <button onclick="googleRegister()" class="btn-secondary w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-3">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Sign up with Google
+                    </button>
+                    
+                    <div class="divider text-zinc-600 text-sm">or register with email</div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm text-zinc-400 mb-2">First Name</label>
+                            <input type="text" id="regFirstName" placeholder="John" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-zinc-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-zinc-400 mb-2">Last Name</label>
+                            <input type="text" id="regLastName" placeholder="Doe" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-zinc-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-2">Gmail Address</label>
+                        <input type="email" id="regEmail" placeholder="you@gmail.com" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-zinc-500">
+                        <p class="text-xs text-zinc-600 mt-1">Only Gmail accounts supported for public registration</p>
+                    </div>
+                    
+                    <button onclick="sendRegOTP()" class="btn-primary w-full py-3.5 rounded-xl text-white font-semibold">
+                        Continue →
+                    </button>
+                    
+                    <div id="regError" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"></div>
+                    
+                    <p class="text-center text-zinc-500 text-sm">
+                        Already have an account? <button onclick="showAuthView('login')" class="text-red-500 hover:text-red-400 font-medium">Sign in</button>
+                    </p>
+                </div>
+                
+                <!-- Step 2: OTP -->
+                <div id="regStep2" class="hidden space-y-6">
+                    <div class="text-center">
+                        <div class="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                            <span class="text-3xl">🔐</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Verify your email</h3>
+                        <p class="text-zinc-500 mt-2">Enter the 6-digit code sent to</p>
+                        <p id="otpEmail" class="text-white font-medium"></p>
+                    </div>
+                    
+                    <div class="flex justify-center gap-2" id="otpContainer">
+                        <input type="text" maxlength="1" class="otp-input input-field rounded-xl text-white" data-idx="0">
+                        <input type="text" maxlength="1" class="otp-input input-field rounded-xl text-white" data-idx="1">
+                        <input type="text" maxlength="1" class="otp-input input-field rounded-xl text-white" data-idx="2">
+                        <input type="text" maxlength="1" class="otp-input input-field rounded-xl text-white" data-idx="3">
+                        <input type="text" maxlength="1" class="otp-input input-field rounded-xl text-white" data-idx="4">
+                        <input type="text" maxlength="1" class="otp-input input-field rounded-xl text-white" data-idx="5">
+                    </div>
+                    
+                    <div class="p-4 bg-zinc-900/50 rounded-xl">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-zinc-400">Code expires in:</span>
+                            <span id="otpTimer" class="text-red-400 font-mono font-bold">05:00</span>
+                        </div>
+                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div id="otpProgress" class="h-full bg-gradient-to-r from-red-600 to-red-500 transition-all" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="otpError" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm text-center"></div>
+                    
+                    <button onclick="resendOTP()" class="w-full text-red-500 hover:text-red-400 text-sm">Resend code</button>
+                    <button onclick="goRegStep(1)" class="w-full py-2 text-zinc-400 hover:text-white text-sm">← Back</button>
+                </div>
+                
+                <!-- Step 3: Success -->
+                <div id="regStep3" class="hidden space-y-6 text-center">
+                    <div class="w-24 h-24 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto">
+                        <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white">Account created!</h3>
+                    <p class="text-zinc-500">Welcome to AIRA, <span id="welcomeName" class="text-white font-medium"></span></p>
+                    
+                    <button onclick="proceedToApp()" class="btn-primary w-full py-3.5 rounded-xl text-white font-semibold">
+                        Get Started →
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <p class="text-center text-zinc-600 text-xs mt-8">
+                © 2024 AIRA by Lantau Group. All rights reserved.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MAIN APP VIEW ==================== -->
+<div id="appView" class="view min-h-screen">
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-full w-64 flex flex-col z-40">
+        <div class="p-5 border-b border-zinc-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white">AIRA</h1>
+                    <p id="sidebarRole" class="text-xs text-zinc-500">AI Research Agent</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav id="sidebarNav" class="flex-1 p-3 space-y-1 overflow-y-auto"></nav>
+        
+        <!-- User Menu -->
+        <div class="p-3 border-t border-zinc-800">
+            <div class="p-3 bg-zinc-900/50 rounded-xl mb-3" id="systemStatus">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="status-dot bg-green-500 pulse-dot"></div>
+                    <span class="text-xs text-zinc-500">System Status</span>
+                </div>
+                <p class="text-sm text-green-400 font-medium">All Systems Operational</p>
+            </div>
+            
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/50 cursor-pointer transition" onclick="toggleUserMenu()">
+                <div id="userAvatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-sm font-bold shadow-lg shadow-red-500/20">U</div>
+                <div class="flex-1 min-w-0">
+                    <p id="userName" class="text-sm font-medium text-white truncate">User</p>
+                    <p id="userRoleText" class="text-xs text-zinc-500">Free Plan</p>
+                </div>
+                <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            
+            <div id="userMenu" class="hidden mt-2 bg-zinc-900 border border-zinc-700 rounded-xl p-1 shadow-xl">
+                <button onclick="showAppSection('settings')" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings
+                </button>
+                <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:bg-zinc-800 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign Out
+                </button>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="ml-64 min-h-screen">
+        
+        <!-- ===== CHAT SECTION ===== -->
+        <div id="chatSection" class="hidden flex flex-col h-screen">
+            <header class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-lg font-semibold text-white">AI Research Assistant</h2>
+                    <span id="skillBadge" class="text-xs px-3 py-1 bg-red-500/10 text-red-400 rounded-full border border-red-500/20">🔬 Research Mode</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="industrySelect" class="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:border-red-500 focus:outline-none transition">
+                        <option value="energy">⚡ Energy</option>
+                        <option value="finance">💰 Finance</option>
+                        <option value="healthcare">🏥 Healthcare</option>
+                        <option value="technology">💻 Technology</option>
+                    </select>
+                    <button onclick="toggleKnowledgePanel()" class="p-2.5 hover:bg-zinc-800 rounded-lg transition" title="Toggle Knowledge Panel">
+                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="flex flex-1 overflow-hidden">
+                <div class="flex-1 flex flex-col">
+                    <div id="chatMessages" class="flex-1 overflow-y-auto">
+                        <div class="max-w-4xl mx-auto px-6 py-8">
+                            <div id="chatWelcome" class="text-center py-16">
+                                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-500/30">
+                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                </div>
+                                <h2 class="text-3xl font-bold text-white mb-3">How can I help you today?</h2>
+                                <p class="text-zinc-500 mb-10 text-lg">Powered by industry-specific knowledge</p>
+                                
+                                <div class="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+                                    <button onclick="askQuestion('/research solar farm locations in Luzon')" class="p-5 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-2xl text-left transition group">
+                                        <span class="text-2xl mb-2 block">🗺️</span>
+                                        <p class="font-medium text-white group-hover:text-red-400 transition">Solar Farm Locations</p>
+                                        <p class="text-sm text-zinc-500 mt-1">Find optimal sites with map</p>
+                                    </button>
+                                    <button onclick="askQuestion('/analyze PSE stock market')" class="p-5 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-2xl text-left transition group">
+                                        <span class="text-2xl mb-2 block">📊</span>
+                                        <p class="font-medium text-white group-hover:text-red-400 transition">PSE Market Analysis</p>
+                                        <p class="text-sm text-zinc-500 mt-1">Stock market visualization</p>
+                                    </button>
+                                    <button onclick="askQuestion('/analyze power plants Philippines')" class="p-5 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-2xl text-left transition group">
+                                        <span class="text-2xl mb-2 block">⚡</span>
+                                        <p class="font-medium text-white group-hover:text-red-400 transition">Power Plant Analysis</p>
+                                        <p class="text-sm text-zinc-500 mt-1">View capacity by region</p>
+                                    </button>
+                                    <button onclick="askQuestion('/compare solar vs wind energy')" class="p-5 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-2xl text-left transition group">
+                                        <span class="text-2xl mb-2 block">⚖️</span>
+                                        <p class="font-medium text-white group-hover:text-red-400 transition">Energy Comparison</p>
+                                        <p class="text-sm text-zinc-500 mt-1">Solar vs Wind analysis</p>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-t border-zinc-800 bg-zinc-900/30">
+                        <div class="max-w-4xl mx-auto">
+                            <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 focus-within:border-red-500/50 transition">
+                                <textarea id="chatInput" rows="1" placeholder="Message AIRA... Try /research, /analyze, /compare" class="w-full bg-transparent resize-none outline-none text-white placeholder-zinc-500 max-h-32" onkeydown="handleChatKey(event)"></textarea>
+                                <div class="flex items-center justify-between mt-3 pt-3 border-t border-zinc-800">
+                                    <div class="flex gap-2">
+                                        <button class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 transition">/research</button>
+                                        <button class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 transition">/analyze</button>
+                                        <button class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 transition">/compare</button>
+                                    </div>
+                                    <button onclick="sendMessage()" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                                        Send <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="knowledgePanel" class="hidden w-80 border-l border-zinc-800 flex flex-col bg-zinc-900/50">
+                    <div class="p-4 border-b border-zinc-800">
+                        <h3 class="font-semibold text-white">📚 Knowledge Base</h3>
+                        <p class="text-xs text-zinc-500 mt-1">Click to use in your query</p>
+                    </div>
+                    <div id="knowledgeList" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+                    <div id="visualPanel" class="hidden border-t border-zinc-800 p-4">
+                        <h4 class="text-sm font-medium text-white mb-3">📊 Visualization</h4>
+                        <div id="visualContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== DASHBOARD SECTION ===== -->
+        <div id="dashboardSection" class="hidden p-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-white">Dashboard Overview</h2>
+                    <p class="text-zinc-500 mt-1">Welcome back! Here's your AI usage summary.</p>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-5 mb-8">
+                    <div class="stat-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-zinc-500 text-sm">Queries This Month</p>
+                            <span class="text-xs px-2 py-1 bg-green-500/10 text-green-400 rounded-full">+12%</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white">1,247</p>
+                        <p class="text-xs text-zinc-600 mt-2">of 5,000 limit</p>
+                        <div class="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-red-500 rounded-full" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl p-6">
+                        <p class="text-zinc-500 text-sm mb-4">Knowledge Items</p>
+                        <p class="text-3xl font-bold text-white">847</p>
+                        <p class="text-xs text-zinc-600 mt-2">across 4 industries</p>
+                    </div>
+                    <div class="stat-card rounded-2xl p-6">
+                        <p class="text-zinc-500 text-sm mb-4">Team Members</p>
+                        <p class="text-3xl font-bold text-white">8</p>
+                        <p class="text-xs text-zinc-600 mt-2">2 pending invites</p>
+                    </div>
+                    <div class="stat-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-zinc-500 text-sm">Response Accuracy</p>
+                            <span class="text-xs px-2 py-1 bg-green-500/10 text-green-400 rounded-full">↑ 3%</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white">94.2%</p>
+                        <p class="text-xs text-zinc-600 mt-2">based on feedback</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="card rounded-2xl p-6">
+                        <h3 class="font-semibold text-white mb-4">Query Volume (7 Days)</h3>
+                        <canvas id="companyChart1" height="200"></canvas>
+                    </div>
+                    <div class="card rounded-2xl p-6">
+                        <h3 class="font-semibold text-white mb-4">Usage by Industry</h3>
+                        <canvas id="companyChart2" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== ADMIN SECTION ===== -->
+        <div id="adminSection" class="hidden p-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">System Dashboard</h2>
+                        <p class="text-zinc-500 mt-1">Monitor AIRA system performance and health.</p>
+                    </div>
+                    <button onclick="refreshAdmin()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-5 gap-4 mb-8">
+                    <div class="stat-card rounded-2xl p-5">
+                        <p class="text-zinc-500 text-xs mb-2">Total Users</p>
+                        <p id="adminTotalUsers" class="text-2xl font-bold text-white">0</p>
+                        <p class="text-xs text-green-400 mt-1">+23 today</p>
+                    </div>
+                    <div class="stat-card rounded-2xl p-5">
+                        <p class="text-zinc-500 text-xs mb-2">Active Sessions</p>
+                        <p class="text-2xl font-bold text-white">89</p>
+                        <p class="text-xs text-zinc-500 mt-1">real-time</p>
+                    </div>
+                    <div class="stat-card rounded-2xl p-5">
+                        <p class="text-zinc-500 text-xs mb-2">Queries Today</p>
+                        <p class="text-2xl font-bold text-white">5,847</p>
+                        <p class="text-xs text-green-400 mt-1">+12% vs yesterday</p>
+                    </div>
+                    <div class="stat-card rounded-2xl p-5">
+                        <p class="text-zinc-500 text-xs mb-2">Knowledge Items</p>
+                        <p class="text-2xl font-bold text-white">2,847</p>
+                        <p class="text-xs text-zinc-500 mt-1">10 industries</p>
+                    </div>
+                    <div class="stat-card rounded-2xl p-5">
+                        <p class="text-zinc-500 text-xs mb-2">Avg Response</p>
+                        <p class="text-2xl font-bold text-white">1.2s</p>
+                        <p class="text-xs text-green-400 mt-1">within SLA</p>
+                    </div>
+                </div>
+                
+                <div class="card rounded-2xl p-6 mb-6">
+                    <h3 class="font-semibold text-white mb-4">System Components</h3>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-zinc-400">Orchestrator</span>
+                                <div class="status-dot bg-green-500 pulse-dot"></div>
+                            </div>
+                            <p class="text-lg font-semibold text-white">Running</p>
+                            <p class="text-xs text-zinc-600 mt-1">CPU: 23% | Mem: 45%</p>
+                        </div>
+                        <div class="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-zinc-400">Knowledge DB</span>
+                                <div class="status-dot bg-green-500"></div>
+                            </div>
+                            <p class="text-lg font-semibold text-white">Connected</p>
+                            <p class="text-xs text-zinc-600 mt-1">PostgreSQL + pgvector</p>
+                        </div>
+                        <div class="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-zinc-400">Claude API</span>
+                                <div class="status-dot bg-green-500"></div>
+                            </div>
+                            <p class="text-lg font-semibold text-white">Connected</p>
+                            <p class="text-xs text-zinc-600 mt-1">claude-3.5-sonnet</p>
+                        </div>
+                        <div class="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-zinc-400">MCP Servers</span>
+                                <div class="status-dot bg-green-500"></div>
+                            </div>
+                            <p class="text-lg font-semibold text-white">5 Active</p>
+                            <p class="text-xs text-zinc-600 mt-1">research, code, data</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-white">Registered Users</h3>
+                        <button onclick="showToast('Add user modal coming soon', 'info')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition">+ Add User</button>
+                    </div>
+                    <table class="w-full">
+                        <thead>
+                            <tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="adminUserTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== SETTINGS SECTION ===== -->
+        <div id="settingsSection" class="hidden p-6">
+            <div class="max-w-3xl mx-auto">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-white">Settings</h2>
+                    <p class="text-zinc-500 mt-1">Manage your account preferences.</p>
+                </div>
+                
+                <div class="card rounded-2xl p-6">
+                    <h3 class="font-semibold text-white mb-6">Profile Settings</h3>
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-zinc-400 mb-2">First Name</label>
+                                <input type="text" id="settingsFirstName" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-zinc-400 mb-2">Last Name</label>
+                                <input type="text" id="settingsLastName" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-zinc-400 mb-2">Email</label>
+                            <input type="email" id="settingsEmail" class="input-field w-full px-4 py-3 rounded-xl text-white" disabled>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-zinc-400 mb-2">Default Industry</label>
+                            <select class="input-field w-full px-4 py-3 rounded-xl text-white">
+                                <option>Energy</option><option>Finance</option><option>Healthcare</option><option>Technology</option>
+                            </select>
+                        </div>
+                        <button onclick="saveSettings()" class="btn-primary px-6 py-3 rounded-xl text-white font-semibold">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+var currentUser = null;
+var loginType = 'enterprise';
+var currentOTP = '';
+var pendingReg = {};
+var otpInterval = null;
+var magicInterval = null;
+var charts = {};
+
+var knowledgeBase = {
+    solar: { title: 'Solar Farm Site Selection', icon: '☀️', industry: 'energy', confidence: 92, source: 'DOE', data: { locations: [{ name: 'Tarlac', lat: 15.48, lng: 120.59, score: 92 }, { name: 'Pangasinan', lat: 15.89, lng: 120.29, score: 89 }, { name: 'Nueva Ecija', lat: 15.58, lng: 121.02, score: 85 }, { name: 'Negros', lat: 10.67, lng: 122.95, score: 83 }, { name: 'Batangas', lat: 13.76, lng: 121.05, score: 78 }] }},
+    plants: { title: 'Power Plants Database', icon: '🏭', industry: 'energy', confidence: 93, source: 'DOE', data: { plants: [{ name: 'Sual Coal', lat: 16.07, lng: 120.08 }, { name: 'Ilijan CCGT', lat: 13.76, lng: 121.05 }, { name: 'Agus Hydro', lat: 8.00, lng: 124.28 }] }},
+    pse: { title: 'PSE Stock Market', icon: '📈', industry: 'finance', confidence: 94, source: 'PSE', data: { history: [{ month: 'Jul', value: 6200 }, { month: 'Aug', value: 6350 }, { month: 'Sep', value: 6500 }, { month: 'Oct', value: 6450 }, { month: 'Nov', value: 6700 }, { month: 'Dec', value: 6800 }] }},
+    fda: { title: 'FDA Drug Registration', icon: '💊', industry: 'healthcare', confidence: 93, source: 'FDA PH' },
+    itbpm: { title: 'IT-BPM Industry', icon: '💻', industry: 'technology', confidence: 92, source: 'IBPAP' }
+};
+
+function initDB() {
+    var dbVersion = 'aira_v2';
+    if (localStorage.getItem('aira_db_version') !== dbVersion) {
+        localStorage.setItem('aira_users', JSON.stringify([
+            { id: 1, email: 'admin@aira.com', password: 'admin123', firstName: 'System', lastName: 'Admin', role: 'admin', verified: true },
+            { id: 2, email: 'mhey@lantau.com', password: 'company123', firstName: 'Mhey', lastName: 'Manalastas', role: 'company', company: 'Lantau Group', verified: true },
+            { id: 3, email: 'user@gmail.com', firstName: 'Test', lastName: 'User', role: 'public', verified: true }
+        ]));
+        localStorage.setItem('aira_db_version', dbVersion);
+    }
+}
+
+function getUsers() { return JSON.parse(localStorage.getItem('aira_users') || '[]'); }
+function saveUsers(u) { localStorage.setItem('aira_users', JSON.stringify(u)); }
+function findUser(email) { return getUsers().find(function(u) { return u.email.toLowerCase() === email.toLowerCase(); }); }
+function createUser(data) { var users = getUsers(); var user = { id: Date.now(), email: data.email, firstName: data.firstName, lastName: data.lastName, role: 'public', verified: true }; users.push(user); saveUsers(users); return user; }
+
+function showAuthView(view) {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('magicLinkSent').classList.add('hidden');
+    document.getElementById('registerForm').classList.add('hidden');
+    if (view === 'login') document.getElementById('loginForm').classList.remove('hidden');
+    else if (view === 'magic') document.getElementById('magicLinkSent').classList.remove('hidden');
+    else if (view === 'register') { document.getElementById('registerForm').classList.remove('hidden'); goRegStep(1); }
+}
+
+function setLoginType(type) {
+    loginType = type;
+    document.getElementById('tabEnterprise').classList.toggle('active', type === 'enterprise');
+    document.getElementById('tabPublic').classList.toggle('active', type === 'public');
+    document.getElementById('tabEnterprise').classList.toggle('text-zinc-400', type !== 'enterprise');
+    document.getElementById('tabPublic').classList.toggle('text-zinc-400', type !== 'public');
+    document.getElementById('enterpriseLogin').classList.toggle('hidden', type !== 'enterprise');
+    document.getElementById('publicLogin').classList.toggle('hidden', type !== 'public');
+}
+
+function togglePassword(id) { var inp = document.getElementById(id); inp.type = inp.type === 'password' ? 'text' : 'password'; }
+
+function loginEnterprise() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    if (!email || !password) { showLoginError('Please enter email and password'); return; }
+    var user = findUser(email);
+    if (!user) { showLoginError('Account not found'); return; }
+    if (user.role === 'public') { showLoginError('Public users should use the Public tab'); return; }
+    if (user.password !== password) { showLoginError('Invalid password'); return; }
+    loginUser(user);
+}
+
+function showLoginError(msg) { var el = document.getElementById('loginError'); el.textContent = msg; el.classList.remove('hidden'); setTimeout(function() { el.classList.add('hidden'); }, 4000); }
+
+function sendMagicLink() {
+    var email = document.getElementById('publicEmail').value.trim();
+    if (!email) { showToast('Enter email', 'error'); return; }
+    if (!email.endsWith('@gmail.com')) { showToast('Only Gmail supported', 'error'); return; }
+    var user = findUser(email);
+    if (!user) { showToast('No account. Please register.', 'error'); return; }
+    localStorage.setItem('pendingMagic', email);
+    document.getElementById('magicEmail').textContent = email;
+    showAuthView('magic');
+    startMagicTimer();
+}
+
+function startMagicTimer() {
+    clearInterval(magicInterval);
+    var expiry = Date.now() + 300000;
+    magicInterval = setInterval(function() {
+        var left = expiry - Date.now();
+        if (left <= 0) { clearInterval(magicInterval); document.getElementById('magicTimer').textContent = 'EXPIRED'; document.getElementById('magicProgress').style.width = '0%'; return; }
+        var m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+        document.getElementById('magicTimer').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        document.getElementById('magicProgress').style.width = (left / 300000 * 100) + '%';
+    }, 1000);
+}
+
+function openMagicLink() { var email = localStorage.getItem('pendingMagic'); if (!email) { showToast('Link expired', 'error'); return; } var user = findUser(email); if (user) { clearInterval(magicInterval); loginUser(user); } }
+
+function googleSignIn() { var email = prompt('📧 Google Sign-In \n\nEnter your Gmail:'); if (!email) return; if (!email.endsWith('@gmail.com')) { showToast('Use Gmail only', 'error'); return; } var user = findUser(email); if (!user) { showToast('No account. Please register.', 'error'); return; } loginUser(user); }
+
+function goRegStep(step) {
+    document.getElementById('regStep1').classList.add('hidden');
+    document.getElementById('regStep2').classList.add('hidden');
+    document.getElementById('regStep3').classList.add('hidden');
+    document.getElementById('regStep' + step).classList.remove('hidden');
+    document.getElementById('step1Dot').className = step >= 1 ? 'w-8 h-2 rounded-full bg-red-500 transition-all' : 'w-2 h-2 rounded-full bg-zinc-700 transition-all';
+    document.getElementById('step2Dot').className = step >= 2 ? 'w-8 h-2 rounded-full bg-red-500 transition-all' : 'w-2 h-2 rounded-full bg-zinc-700 transition-all';
+    document.getElementById('step3Dot').className = step >= 3 ? 'w-8 h-2 rounded-full bg-green-500 transition-all' : 'w-2 h-2 rounded-full bg-zinc-700 transition-all';
+}
+
+function sendRegOTP() {
+    var fn = document.getElementById('regFirstName').value.trim();
+    var ln = document.getElementById('regLastName').value.trim();
+    var email = document.getElementById('regEmail').value.trim();
+    if (!fn || !ln || !email) { document.getElementById('regError').textContent = 'Fill all fields'; document.getElementById('regError').classList.remove('hidden'); return; }
+    if (!email.endsWith('@gmail.com')) { document.getElementById('regError').textContent = 'Use Gmail only'; document.getElementById('regError').classList.remove('hidden'); return; }
+    if (findUser(email)) { document.getElementById('regError').textContent = 'Email already registered'; document.getElementById('regError').classList.remove('hidden'); return; }
+    pendingReg = { firstName: fn, lastName: ln, email: email };
+    currentOTP = String(Math.floor(100000 + Math.random() * 900000));
+    alert('📧 OTP sent to ' + email + '\n\nCode: ' + currentOTP + '\n\n');
+    document.getElementById('otpEmail').textContent = email;
+    goRegStep(2);
+    startOTPTimer();
+    setupOTPInputs();
+}
+
+function startOTPTimer() {
+    clearInterval(otpInterval);
+    var expiry = Date.now() + 300000;
+    otpInterval = setInterval(function() {
+        var left = expiry - Date.now();
+        if (left <= 0) { clearInterval(otpInterval); document.getElementById('otpTimer').textContent = 'EXPIRED'; document.getElementById('otpProgress').style.width = '0%'; return; }
+        var m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+        document.getElementById('otpTimer').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        document.getElementById('otpProgress').style.width = (left / 300000 * 100) + '%';
+    }, 1000);
+}
+
+function setupOTPInputs() {
+    var inputs = document.querySelectorAll('#otpContainer input');
+    inputs.forEach(function(inp, i) {
+        inp.value = '';
+        inp.addEventListener('input', function() { if (inp.value && i < 5) inputs[i + 1].focus(); var otp = ''; inputs.forEach(function(x) { otp += x.value; }); if (otp.length === 6) verifyOTP(otp); });
+        inp.addEventListener('keydown', function(e) { if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i - 1].focus(); });
+    });
+    setTimeout(function() { inputs[0].focus(); }, 100);
+}
+
+function verifyOTP(entered) {
+    if (entered !== currentOTP) { document.getElementById('otpError').textContent = 'Invalid code. Try again.'; document.getElementById('otpError').classList.remove('hidden'); document.querySelectorAll('#otpContainer input').forEach(function(x) { x.value = ''; }); document.querySelectorAll('#otpContainer input')[0].focus(); return; }
+    clearInterval(otpInterval);
+    var user = createUser(pendingReg);
+    currentUser = user;
+    localStorage.setItem('aira_current_user', JSON.stringify(user));
+    document.getElementById('welcomeName').textContent = user.firstName;
+    goRegStep(3);
+}
+
+function resendOTP() { sendRegOTP(); }
+function googleRegister() { var email = prompt('📧 Google Sign-Up \n\nEnter your Gmail:'); if (!email) return; if (!email.endsWith('@gmail.com')) { showToast('Use Gmail only', 'error'); return; } if (findUser(email)) { showToast('Email exists. Please sign in.', 'error'); return; } var name = email.split('@')[0]; var user = createUser({ email: email, firstName: name, lastName: '' }); currentUser = user; localStorage.setItem('aira_current_user', JSON.stringify(user)); document.getElementById('welcomeName').textContent = user.firstName; goRegStep(3); }
+function proceedToApp() { showView('app'); initApp(); }
+function loginUser(user) { currentUser = user; localStorage.setItem('aira_current_user', JSON.stringify(user)); showView('app'); initApp(); }
+function logout() { localStorage.removeItem('aira_current_user'); currentUser = null; showView('login'); showAuthView('login'); }
+function showView(view) { document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); }); document.getElementById(view + 'View').classList.add('active'); }
+
+function initApp() {
+    if (!currentUser) { var stored = localStorage.getItem('aira_current_user'); if (stored) currentUser = JSON.parse(stored); else { showView('login'); return; } }
+    document.getElementById('userName').textContent = currentUser.firstName + ' ' + (currentUser.lastName || '');
+    document.getElementById('userAvatar').textContent = currentUser.firstName.charAt(0) + (currentUser.lastName ? currentUser.lastName.charAt(0) : '');
+    document.getElementById('userRoleText').textContent = currentUser.role === 'admin' ? 'SuperAdmin' : currentUser.role === 'company' ? 'Enterprise' : 'Free Plan';
+    document.getElementById('sidebarRole').textContent = currentUser.role === 'admin' ? 'SuperAdmin Console' : 'AI Research Agent';
+    document.getElementById('settingsFirstName').value = currentUser.firstName;
+    document.getElementById('settingsLastName').value = currentUser.lastName || '';
+    document.getElementById('settingsEmail').value = currentUser.email;
+    buildNav();
+    var defaultSection = currentUser.role === 'admin' ? 'admin' : currentUser.role === 'company' ? 'dashboard' : 'chat';
+    showAppSection(defaultSection);
+    populateKnowledge();
+}
+
+function buildNav() {
+    var nav = document.getElementById('sidebarNav');
+    var items = currentUser.role === 'admin' ? [{ id: 'admin', icon: '📊', label: 'System Dashboard' }, { id: 'chat', icon: '💬', label: 'AI Chat' }, { id: 'settings', icon: '⚙️', label: 'Settings' }] : currentUser.role === 'company' ? [{ id: 'dashboard', icon: '📊', label: 'Dashboard' }, { id: 'chat', icon: '💬', label: 'AI Chat' }, { id: 'settings', icon: '⚙️', label: 'Settings' }] : [{ id: 'chat', icon: '💬', label: 'AI Chat' }, { id: 'settings', icon: '⚙️', label: 'Settings' }];
+    nav.innerHTML = items.map(function(item) { return '<a href="#" onclick="showAppSection(\'' + item.id + '\', event)" id="nav-' + item.id + '" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-zinc-400"><span class="text-lg">' + item.icon + '</span><span>' + item.label + '</span></a>'; }).join('');
+}
+
+function showAppSection(section, event) {
+    if (event) event.preventDefault();
+    ['chatSection', 'dashboardSection', 'adminSection', 'settingsSection'].forEach(function(s) { document.getElementById(s).classList.add('hidden'); });
+    document.getElementById(section + 'Section').classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    var nav = document.getElementById('nav-' + section);
+    if (nav) nav.classList.add('active');
+    if (section === 'dashboard') initCompanyCharts();
+    if (section === 'admin') initAdminSection();
+}
+
+function initCompanyCharts() {
+    if (charts.company1) charts.company1.destroy();
+    if (charts.company2) charts.company2.destroy();
+    charts.company1 = new Chart(document.getElementById('companyChart1'), { type: 'line', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ data: [145, 189, 167, 234, 198, 87, 127], borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } }, y: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } } } } });
+    charts.company2 = new Chart(document.getElementById('companyChart2'), { type: 'doughnut', data: { labels: ['Energy', 'Finance', 'Healthcare', 'Tech'], datasets: [{ data: [45, 25, 18, 12], backgroundColor: ['#eab308', '#22c55e', '#3b82f6', '#8b5cf6'] }] }, options: { responsive: true, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#a1a1aa' } } } } });
+}
+
+function initAdminSection() {
+    document.getElementById('adminTotalUsers').textContent = getUsers().length;
+    var table = document.getElementById('adminUserTable');
+    table.innerHTML = getUsers().map(function(u) {
+        var roleBadge = u.role === 'admin' ? 'bg-red-500/10 text-red-400' : u.role === 'company' ? 'bg-blue-500/10 text-blue-400' : 'bg-zinc-700 text-zinc-300';
+        return '<tr><td class="text-white font-medium">' + u.firstName + ' ' + (u.lastName || '') + '</td><td class="text-zinc-400">' + u.email + '</td><td><span class="px-2 py-1 rounded-full text-xs ' + roleBadge + '">' + u.role + '</span></td><td><span class="px-2 py-1 bg-green-500/10 text-green-400 rounded-full text-xs">Active</span></td><td><button class="text-zinc-500 hover:text-white mr-3 transition">Edit</button><button class="text-red-500 hover:text-red-400 transition">Delete</button></td></tr>';
+    }).join('');
+}
+
+function refreshAdmin() { initAdminSection(); showToast('Dashboard refreshed', 'success'); }
+
+function populateKnowledge() {
+    var list = document.getElementById('knowledgeList');
+    list.innerHTML = Object.keys(knowledgeBase).map(function(key) { var kb = knowledgeBase[key]; return '<div class="knowledge-card rounded-xl p-4" onclick="useKnowledge(\'' + key + '\')"><div class="flex items-center gap-3 mb-2"><span class="text-2xl">' + kb.icon + '</span><span class="font-medium text-white">' + kb.title + '</span></div><div class="flex items-center gap-2"><span class="text-xs px-2 py-0.5 bg-green-500/10 text-green-400 rounded-full">' + kb.source + '</span><span class="text-xs text-zinc-600">' + kb.confidence + '% confidence</span></div></div>'; }).join('');
+}
+
+function useKnowledge(key) { document.getElementById('chatInput').value = '/research ' + knowledgeBase[key].title; document.getElementById('chatInput').focus(); }
+function toggleKnowledgePanel() { document.getElementById('knowledgePanel').classList.toggle('hidden'); }
+function handleChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function askQuestion(q) { document.getElementById('chatInput').value = q; sendMessage(); }
+
+function sendMessage() {
+    var input = document.getElementById('chatInput');
+    var query = input.value.trim();
+    if (!query) return;
+    document.getElementById('chatWelcome').style.display = 'none';
+    addMessage(query, 'user');
+    input.value = '';
+    addTyping();
+    setTimeout(function() { removeTyping(); var response = generateResponse(query); addMessage(response.text, 'ai'); if (response.visual) response.visual(); }, 1500);
+}
+
+function addMessage(content, type) {
+    var container = document.querySelector('#chatMessages > div');
+    var div = document.createElement('div');
+    div.className = 'mb-6 fade-in';
+    if (type === 'user') { div.innerHTML = '<div class="flex gap-4"><div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold flex-shrink-0">' + (currentUser ? currentUser.firstName.charAt(0) : 'U') + '</div><div class="pt-2"><p class="text-white">' + escapeHtml(content) + '</p></div></div>'; }
+    else { div.innerHTML = '<div class="flex gap-4"><div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/20"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div><div class="pt-2 flex-1 prose prose-invert max-w-none">' + renderMarkdown(content) + '</div></div>'; }
+    container.appendChild(div);
+    container.parentElement.scrollTop = container.parentElement.scrollHeight;
+}
+
+function addTyping() { var container = document.querySelector('#chatMessages > div'); var div = document.createElement('div'); div.id = 'typingIndicator'; div.className = 'mb-6'; div.innerHTML = '<div class="flex gap-4"><div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/20"></div><div class="pt-3 typing flex gap-1"><span class="w-2 h-2 bg-zinc-500 rounded-full"></span><span class="w-2 h-2 bg-zinc-500 rounded-full"></span><span class="w-2 h-2 bg-zinc-500 rounded-full"></span></div></div>'; container.appendChild(div); container.parentElement.scrollTop = container.parentElement.scrollHeight; }
+function removeTyping() { var el = document.getElementById('typingIndicator'); if (el) el.remove(); }
+
+function generateResponse(query) {
+    var q = query.toLowerCase();
+    if (q.includes('solar') && (q.includes('location') || q.includes('farm'))) { return { text: '## Best Solar Farm Locations in the Philippines\n\nBased on solar irradiance data and grid infrastructure analysis:\n\n| Rank | Location | Suitability Score |\n|------|----------|-------------------|\n| 1 | **Tarlac** | 92/100 |\n| 2 | **Pangasinan** | 89/100 |\n| 3 | **Nueva Ecija** | 85/100 |\n| 4 | **Negros** | 83/100 |\n| 5 | **Batangas** | 78/100 |\n\n### Key Selection Factors\n- Solar irradiance: 4.5+ kWh/m²/day\n- Grid access within 20km\n- Flat terrain preferred\n\n*Source: Department of Energy (DOE) - 92% confidence*', visual: function() { generateMap(knowledgeBase.solar.data.locations, 'Solar Farm Sites'); } }; }
+    if (q.includes('power plant')) { return { text: '## Philippine Power Plants Overview\n\n| Plant | Type | Capacity |\n|-------|------|----------|\n| **Sual Coal** | Coal | 1,294 MW |\n| **Ilijan CCGT** | Gas | 1,200 MW |\n| **Sta. Rita** | Gas | 1,000 MW |\n| **Agus Hydro** | Hydro | 992 MW |\n| **Pagbilao** | Coal | 735 MW |\n\n### Grid Capacity Summary\n- **Luzon Grid**: 16,000 MW\n- **Visayas Grid**: 3,500 MW\n- **Mindanao Grid**: 3,200 MW\n\n*Source: DOE - 93% confidence*', visual: function() { generateMap(knowledgeBase.plants.data.plants, 'Power Plants'); } }; }
+    if (q.includes('pse') || q.includes('stock') || q.includes('market')) { return { text: '## PSE Stock Market Analysis\n\n| Metric | Value |\n|--------|-------|\n| **PSEi Index** | 6,800 |\n| **Market Cap** | ₱17.5 Trillion |\n| **Daily Volume** | ₱7.5 Billion |\n\n### Top Companies by Market Cap\n1. SM Investments - ₱1.2T\n2. BDO Unibank - ₱750B\n3. Ayala Land - ₱650B\n\n*Source: PSE - 94% confidence*', visual: function() { generateChart(knowledgeBase.pse.data.history, 'PSEi 6-Month Trend'); } }; }
+    if (q.includes('compare') || q.includes('vs')) { return { text: '## Solar vs Wind Energy Comparison\n\n| Factor | Solar | Wind |\n|--------|-------|------|\n| **Capacity Factor** | 15-22% | 25-35% |\n| **LCOE** | ₱3.5-5/kWh | ₱4-6/kWh |\n| **Build Time** | 6-12 months | 12-24 months |\n\n### Recommendation\n> For Philippine conditions, a **hybrid portfolio** combining both technologies provides optimal results.\n\n*Source: DOE Renewable Energy Report - 92% confidence*', visual: function() { generateComparisonChart(); } }; }
+    return { text: '## I can help you with:\n\n- 🗺️ **/research solar farm locations** - Find optimal sites with maps\n- ⚡ **/analyze power plants** - View capacity by region\n- 📊 **/analyze PSE market** - Stock market trends\n- ⚖️ **/compare solar vs wind** - Energy source comparison\n\nClick a knowledge item in the panel or try one of these commands!', visual: null };
+}
+
+function generateMap(locations, title) {
+    document.getElementById('knowledgePanel').classList.remove('hidden');
+    document.getElementById('visualPanel').classList.remove('hidden');
+    var svg = '<svg viewBox="0 0 400 500" class="w-full rounded-xl border border-zinc-800"><defs><linearGradient id="ocean" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#1e3a5f"/><stop offset="100%" style="stop-color:#0f172a"/></linearGradient></defs><rect fill="url(#ocean)" width="400" height="500"/><path fill="#22c55e" opacity="0.6" d="M150,40 L200,35 L240,45 L260,80 L265,130 L255,180 L240,220 L200,260 L160,250 L140,210 L145,160 L155,120 L150,80 Z"/><path fill="#22c55e" opacity="0.6" d="M120,280 L180,270 L220,285 L240,320 L220,360 L170,370 L130,350 L120,310 Z"/><path fill="#22c55e" opacity="0.6" d="M180,390 L260,380 L300,410 L310,460 L280,490 L220,495 L170,470 L160,430 Z"/>';
+    locations.forEach(function(loc, i) { var x = 200 + (loc.lng - 121) * 30; var y = 200 + (14 - loc.lat) * 25; svg += '<circle cx="' + x + '" cy="' + y + '" r="12" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="' + x + '" y="' + (y + 4) + '" fill="#fff" font-size="9" text-anchor="middle" font-weight="bold">' + (loc.score || (i + 1)) + '</text><text x="' + x + '" y="' + (y - 18) + '" fill="#fff" font-size="10" text-anchor="middle" font-weight="500">' + loc.name + '</text>'; });
+    svg += '<text x="200" y="28" fill="#fff" font-size="14" text-anchor="middle" font-weight="bold">' + title + '</text></svg>';
+    document.getElementById('visualContainer').innerHTML = svg;
+}
+
+function generateChart(data, title) {
+    document.getElementById('knowledgePanel').classList.remove('hidden');
+    document.getElementById('visualPanel').classList.remove('hidden');
+    document.getElementById('visualContainer').innerHTML = '<canvas id="panelChart"></canvas>';
+    if (charts.panel) charts.panel.destroy();
+    charts.panel = new Chart(document.getElementById('panelChart'), { type: 'line', data: { labels: data.map(function(d) { return d.month; }), datasets: [{ data: data.map(function(d) { return d.value; }), borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', fill: true, tension: 0.4, pointBackgroundColor: '#dc2626', pointBorderColor: '#fff', pointBorderWidth: 2 }] }, options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: title, color: '#fff', font: { size: 14 } } }, scales: { x: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } }, y: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } } } } });
+}
+
+function generateComparisonChart() {
+    document.getElementById('knowledgePanel').classList.remove('hidden');
+    document.getElementById('visualPanel').classList.remove('hidden');
+    document.getElementById('visualContainer').innerHTML = '<canvas id="panelChart"></canvas>';
+    if (charts.panel) charts.panel.destroy();
+    charts.panel = new Chart(document.getElementById('panelChart'), { type: 'bar', data: { labels: ['Solar', 'Wind'], datasets: [{ label: 'LCOE (₱/kWh)', data: [4.25, 5.0], backgroundColor: ['rgba(220,38,38,0.8)', 'rgba(59,130,246,0.8)'], borderRadius: 8 }] }, options: { responsive: true, plugins: { title: { display: true, text: 'Cost Comparison', color: '#fff', font: { size: 14 } } }, scales: { x: { grid: { display: false }, ticks: { color: '#a1a1aa' } }, y: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } } } } });
+}
+
+function toggleUserMenu() { document.getElementById('userMenu').classList.toggle('hidden'); }
+function saveSettings() { showToast('Settings saved successfully', 'success'); }
+function showToast(msg, type) { var container = document.getElementById('toastContainer'); var toast = document.createElement('div'); toast.className = 'toast px-4 py-3 rounded-xl text-sm shadow-xl ' + (type === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-zinc-800 text-zinc-300 border border-zinc-700'); toast.textContent = msg; container.appendChild(toast); setTimeout(function() { toast.remove(); }, 3000); }
+function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+function renderMarkdown(text) { return text.replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>').replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-white mt-4 mb-3">$1</h2>').replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>').replace(/\*(.*?)\*/g, '<em class="text-zinc-300">$1</em>').replace(/^> (.*$)/gm, '<blockquote class="border-l-2 border-red-500 pl-4 text-zinc-400 italic my-3">$1</blockquote>').replace(/\|(.+)\|/g, function(match) { var cells = match.split('|').filter(function(c) { return c.trim(); }); return '<tr>' + cells.map(function(c) { return '<td class="px-4 py-2 border border-zinc-700">' + c.trim() + '</td>'; }).join('') + '</tr>'; }).replace(/\n/g, '<br>'); }
+
+function checkAuth() {
+    var stored = localStorage.getItem('aira_current_user');
+    if (stored) {
+        currentUser = JSON.parse(stored);
+        showView('app');
+        initApp();
+    } else {
+        showView('login');
+        showAuthView('login');
+    }
+}
+
+initDB();
+checkAuth();
+</script>
+</body>
+</html>
